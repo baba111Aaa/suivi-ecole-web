@@ -9,6 +9,7 @@ export default function Accueil() {
   const router = useRouter();
   const { user, ready } = useAuth();
   const [etab, setEtab] = useState(null);
+  const [role, setRole] = useState('');
   const [classes, setClasses] = useState([]);
   const [message, setMessage] = useState('Chargement…');
 
@@ -17,7 +18,7 @@ export default function Accueil() {
     (async () => {
       const { data: m, error } = await supabase
         .from('membres_etablissement')
-        .select('role, etablissements(id, nom)')
+        .select('role, etablissements(id, nom, mode_saisie)')
         .eq('profil_id', user.id)
         .limit(1);
 
@@ -26,6 +27,7 @@ export default function Accueil() {
         return;
       }
       setEtab(m[0].etablissements);
+      setRole(m[0].role);
 
       const { data: cl } = await supabase
         .from('classes')
@@ -42,15 +44,33 @@ export default function Accueil() {
     router.replace('/login');
   }
 
+  const libelleMode =
+    etab && etab.mode_saisie === 'enseignants'
+      ? 'Saisie par les enseignants'
+      : "Saisie par l'administration";
+
   return (
     <div className="page">
       <div className="card ligne">
         <div>
           <h1>{etab ? etab.nom : 'Suivi École'}</h1>
-          <span className="muted">{user?.email}</span>
+          <span className="muted">
+            {user?.email}
+            {role ? ` · ${role === 'admin' ? 'administrateur' : 'enseignant'}` : ''}
+          </span>
+          {etab && <div className="muted">{libelleMode}</div>}
         </div>
         <button className="secondaire" onClick={deconnexion}>Déconnexion</button>
       </div>
+
+      {role === 'admin' && (
+        <div className="card">
+          <Link href="/gestion" className="btn" style={{ marginTop: 0 }}>
+            Gestion de l'établissement
+          </Link>
+          <p className="muted">Année, classes, matières, élèves et personnel.</p>
+        </div>
+      )}
 
       <div className="card">
         <h2>Classes</h2>
